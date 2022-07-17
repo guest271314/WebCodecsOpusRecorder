@@ -61,7 +61,7 @@ class WebCodecsOpusRecorder {
     console.log(URL.createObjectURL(this.blob));
     const handle = await showSaveFilePicker({
       startIn: 'music',
-      suggestedName: `recording.opus.webcodecs`,
+      suggestedName: `recording_${new Date().getTime()}.opus.webcodecs`,
     });
     const writable = await handle.createWritable();
     await this.blob.stream().pipeTo(writable);
