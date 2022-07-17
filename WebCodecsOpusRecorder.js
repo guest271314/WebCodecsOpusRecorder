@@ -40,7 +40,7 @@ class WebCodecsOpusRecorder {
           Object.assign(this.metadata, { decoderConfig });
           console.log(this.metadata);
         }
-        const { byteLength, duration } = chunk;
+        const { byteLength } = chunk;
         this.metadata.offsets.push(byteLength);
         const ab = new ArrayBuffer(byteLength);
         chunk.copyTo(ab, { planeIndex: 0 });
