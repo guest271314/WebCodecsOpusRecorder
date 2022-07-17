@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk Player</title>
+    <style>
+      input,
+      audio {
+        position: relative;
+        display: block;
+      }
+    </style>
+  </head>
+
+  <body>
+    <p>WebCodecs Opus Recorder and Player</p>
+    <button id="record">Record</button><button id="stop">Stop</button><br />
+    <input type="file" accept=".webcodecs" id="file" />
+    <script type="module">
+      import {
+        WebCodecsOpusRecorder,
+        WebCodecsOpusMediaSource,
+      } from './WebCodecsOpusRecorder.js';
+      
+      let webcodecsOpusRecorder, mediaRecorder, stream, track;
+      
+      document.getElementById('record').onclick = async () => {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        [track] = stream.getAudioTracks();
+        webcodecsOpusRecorder = new WebCodecsOpusRecorder(track);
+        webcodecsOpusRecorder.start();      
+      };
+      
+      document.getElementById('stop').onclick = () => {
+        webcodecsOpusRecorder.stop();
+      };
+
+      document.getElementById('file').onchange = async ({
+        target: {
+          files: [file],
+        },
+      }) => {
+        if (file) {
+          new WebCodecsOpusMediaSource(await file.arrayBuffer());
+        }
+      };
+    </script>
+  </body>
+</html>
