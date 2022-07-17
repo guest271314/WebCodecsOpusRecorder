@@ -27,7 +27,6 @@ class WebCodecsOpusRecorder {
         })
       )
       .catch(console.warn);
-    let first = false;
     this.encoder = new AudioEncoder({
       error(e) {
         console.log(e);
