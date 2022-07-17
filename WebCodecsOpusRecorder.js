@@ -47,7 +47,6 @@ class WebCodecsOpusRecorder {
         this.blob = new Blob([this.blob, ab]);
       },
     });
-
     this.encoder.configure(this.config);
   }
   async stop() {
