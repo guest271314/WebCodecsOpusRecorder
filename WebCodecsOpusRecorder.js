@@ -42,7 +42,7 @@ class WebCodecsOpusRecorder {
         const { byteLength } = chunk;
         this.metadata.offsets.push(byteLength);
         const ab = new ArrayBuffer(byteLength);
-        chunk.copyTo(ab, { planeIndex: 0 });
+        chunk.copyTo(ab);
         this.blob = new Blob([this.blob, ab]);
       },
     });
