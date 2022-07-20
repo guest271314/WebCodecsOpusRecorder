@@ -13,6 +13,7 @@ class WebCodecsOpusRecorder {
         sampleRate: 48000,
         codec: 'opus',
       };
+    this.isConfigured = false;
     Object.assign(this, {
       track,
       processor,
@@ -25,10 +26,14 @@ class WebCodecsOpusRecorder {
     this.processor.readable
       .pipeTo(
         new WritableStream({
-          write: (frame) => {
-            if (frame.numberOfChannels !== this.config.numberOfChannels) {
+          write: async (frame) => {
+            if (!this.isConfigured && frame.numberOfChannels !== this.config.numberOfChannels) {
               this.config.numberOfChannels = frame.numberOfChannels;
+              this.config.format = frame.format;
+              this.config.sampleRate = frame.sampleRate;
+              console.log(await AudioEncoder.isConfigSupported(this.config), frame);
               this.encoder.configure(this.config);
+              this.isConfigured = true;
             }
             this.encoder.encode(frame);
           },
