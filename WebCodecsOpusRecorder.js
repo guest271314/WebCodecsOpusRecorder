@@ -242,9 +242,7 @@ class WebCodecsOpusPlayer {
         } else {
           channels = [floats];
         }
-
         console.log(channels);
-
         const wavEncoder = new WavAudioEncoder({
           sampleRate: 48000,
           numberOfChannels: this.config.decoderConfig.numberOfChannels,
