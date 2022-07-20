@@ -43,7 +43,7 @@ class WebCodecsOpusRecorder {
         })
       )
       .catch(console.warn);
-    let first = false;
+    let firstEncodedChunk = false;
     this.encoder = new AudioEncoder({
       error(e) {
         console.log(e);
@@ -58,10 +58,9 @@ class WebCodecsOpusRecorder {
           });
           console.log(this.metadata);
         }
-        const segment = new Blob();
-        if (!first) {
+        if (!firstEncodedChunk) {
           console.log(chunk, this.config);
-          first = true;
+          firstEncodedChunk = true;
         }
         const { byteLength, duration } = chunk;
         this.metadata.offsets.push(byteLength);
@@ -77,8 +76,7 @@ class WebCodecsOpusRecorder {
     this.track.stop();
     await this.encoder.flush();
     const json = JSON.stringify(this.metadata);
-    const length = Uint32Array.of(json.length);
-    // JSON configuration length
+    const length = Uint32Array.of(json.length); // JSON configuration length
     this.blob = new Blob([length, json, this.blob], {
       type: 'application/octet-stream',
     });
