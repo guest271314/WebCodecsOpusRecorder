@@ -187,16 +187,11 @@ class WebCodecsOpusPlayer {
     } else {
       if (this.type === 'wav') {
         let blob = new Blob();
-        let last;
         const decoder = new AudioDecoder({
           error(e) {
             console.error(e);
           },
           async output(frame) {
-            if (!last) {
-              console.log(frame);
-              last = true;
-            }
             const {
               duration,
               numberOfChannels,
