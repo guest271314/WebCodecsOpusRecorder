@@ -237,7 +237,6 @@ class WebCodecsOpusPlayer {
         this.audio.src = URL.createObjectURL(new Blob(data,{
           type: 'audio/wav'
         }));
-        this.audio.src = url;
       }
     }
     this.audio.play();
