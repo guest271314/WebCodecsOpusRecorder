@@ -174,7 +174,7 @@ class WebCodecsOpusPlayer {
             const eac = new EncodedAudioChunk({
               type: 'key',
               timestamp: this.timestamp,
-              duration: this.duration,
+              duration: !this.index ? 53500 : this.duration,
               data: this.data.subarray(this.index, this.index + offset),
             });
             await sourceBuffer.appendEncodedChunks(eac);
@@ -222,7 +222,7 @@ class WebCodecsOpusPlayer {
           const eac = new EncodedAudioChunk({
             type: 'key',
             timestamp: this.timestamp,
-            duration: this.duration,
+            duration: !this.index ? 53500 : this.duration,
             data: this.data.subarray(this.index, this.index + offset),
           });
           decoder.decode(eac);
