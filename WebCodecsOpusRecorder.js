@@ -189,7 +189,10 @@ class WebCodecsOpusPlayer {
       this.audio.src = URL.createObjectURL(this.ms);
     } else {
       if (this.type === 'wav') {
-        let blob = new Blob();
+        const wav = new WavAudioEncoder({
+          numberOfChannels: this.config.decoderConfig.numberOfChannels,
+          sampleRate: this.config.decoderConfig.sampleRate
+        });
         const decoder = new AudioDecoder({
           error(e) {
             console.error(e);
@@ -208,7 +211,7 @@ class WebCodecsOpusPlayer {
             frame.copyTo(chunk, {
               planeIndex: 0,
             });
-            blob = new Blob([blob, chunk]);
+            wav.write(chunk);
           },
         });
         console.log(
@@ -230,30 +233,10 @@ class WebCodecsOpusPlayer {
           this.index += offset;
         }
         await decoder.flush();
-        const floats = new Float32Array(await blob.arrayBuffer());
-        let channels;
-        // Deinterleave
-        if (this.config.decoderConfig.numberOfChannels > 1) {
-          channels = [[], []];
-          for (let i = 0, j = 0, n = 1; i < floats.length; i++) {
-            channels[(n = ++n % 2)][!n ? j++ : j - 1] = floats[i];
-          }
-          channels = channels.map((f) => new Float32Array(f));
-        } else {
-          channels = [floats];
-        }
-        console.log(channels);
-        const wavEncoder = new WavAudioEncoder({
-          sampleRate: 48000,
-          numberOfChannels: this.config.decoderConfig.numberOfChannels,
-          buffers: channels,
-        });
-        const wav = await wavEncoder.encode();
-        const url = URL.createObjectURL(
-          new Blob([wav], {
-            type: 'audio/wav',
-          })
-        );
+        const data = wav.encode();
+        this.audio.src = URL.createObjectURL(new Blob(data,{
+          type: 'audio/wav'
+        }));
         this.audio.src = url;
       }
     }
@@ -262,14 +245,40 @@ class WebCodecsOpusPlayer {
 }
 // https://github.com/higuma/wav-audio-encoder-js
 class WavAudioEncoder {
-  constructor({ buffers, sampleRate, numberOfChannels }) {
+  constructor({sampleRate, numberOfChannels}) {
     Object.assign(this, {
-      buffers,
       sampleRate,
       numberOfChannels,
       numberOfSamples: 0,
       dataViews: [],
     });
+  }
+  write(buffer) {
+    const floats = new Float32Array(buffer);
+    let channels;
+    // Deinterleave
+    if (this.numberOfChannels > 1) {
+      channels = [[], []];
+      for (let i = 0, j = 0, n = 1; i < floats.length; i++) {
+        channels[(n = ++n % 2)][!n ? j++ : j - 1] = floats[i];
+      }
+      channels = channels.map((f)=>new Float32Array(f));
+    } else {
+      channels = [floats];
+    }
+    const [{length}] = channels;
+    const ab = new ArrayBuffer(length * this.numberOfChannels * 2);
+    const data = new DataView(ab);
+    let offset = 0;
+    for (let i = 0; i < length; i++) {
+      for (let ch = 0; ch < this.numberOfChannels; ch++) {
+        let x = channels[ch][i] * 0x7fff;
+        data.setInt16(offset, x < 0 ? Math.max(x, -0x8000) : Math.min(x, 0x7fff), true);
+        offset += 2;
+      }
+    }
+    this.dataViews.push(data);
+    this.numberOfSamples += length;
   }
   setString(view, offset, str) {
     const len = str.length;
@@ -277,25 +286,7 @@ class WavAudioEncoder {
       view.setUint8(offset + i, str.charCodeAt(i));
     }
   }
-  async encode() {
-    const [{ length }] = this.buffers;
-    const data = new DataView(
-      new ArrayBuffer(length * this.numberOfChannels * 2)
-    );
-    let offset = 0;
-    for (let i = 0; i < length; i++) {
-      for (let ch = 0; ch < this.numberOfChannels; ch++) {
-        let x = this.buffers[ch][i] * 0x7fff;
-        data.setInt16(
-          offset,
-          x < 0 ? Math.max(x, -0x8000) : Math.min(x, 0x7fff),
-          true
-        );
-        offset += 2;
-      }
-    }
-    this.dataViews.push(data);
-    this.numberOfSamples += length;
+  encode() {
     const dataSize = this.numberOfChannels * this.numberOfSamples * 2;
     const view = new DataView(new ArrayBuffer(44));
     this.setString(view, 0, 'RIFF');
@@ -312,9 +303,7 @@ class WavAudioEncoder {
     this.setString(view, 36, 'data');
     view.setUint32(40, dataSize, true);
     this.dataViews.unshift(view);
-    return new Blob(this.dataViews, {
-      type: 'audio/wav',
-    }).arrayBuffer();
+    return this.dataViews;
   }
 }
 export { WebCodecsOpusRecorder, WebCodecsOpusPlayer, WavAudioEncoder };
