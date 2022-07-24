@@ -120,7 +120,7 @@ class WebCodecsOpusMediaSource {
             data: this.data.subarray(this.index, this.index + offset),
           });
           await sourceBuffer.appendEncodedChunks(eac);
-          this.timestamp += this.duration;
+          this.timestamp += eac.duration;
           this.index += offset;
         }
       },
