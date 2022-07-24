@@ -137,12 +137,8 @@ class WebCodecsOpusPlayer {
             ) {
               this.ms.activeSourceBuffers[0].timestampOffset = this.audio.currentTime;
             }
-            if (e.type === 'waiting') {
-              console.log(
-                e.type,
-                this.audio.currentTime,
-                this.ms.activeSourceBuffers[0].timestampOffset
-              );
+            if (e.type === 'waiting' && this.audio.currentTime > 0) {
+              this.ms.activeSourceBuffers[0].timestampOffset = 0;
               // this.ms.endOfStream();
             }
             if (e.type === 'ended') {
@@ -233,23 +229,26 @@ class WebCodecsOpusPlayer {
           this.index += offset;
         }
         await decoder.flush();
-        const data = wav.encode();
-        this.audio.src = URL.createObjectURL(new Blob(data,{
-          type: 'audio/wav'
-        }));
+        const data = await wav.encode();
+        this.audio.src = URL.createObjectURL(data);
       }
     }
-    this.audio.play();
   }
 }
 // https://github.com/higuma/wav-audio-encoder-js
 class WavAudioEncoder {
   constructor({sampleRate, numberOfChannels}) {
+    let controller;
+    let readable = new ReadableStream({
+      start(c) {return controller = c;}
+    });
     Object.assign(this, {
       sampleRate,
       numberOfChannels,
       numberOfSamples: 0,
       dataViews: [],
+      controller,
+      readable
     });
   }
   write(buffer) {
@@ -276,7 +275,7 @@ class WavAudioEncoder {
         offset += 2;
       }
     }
-    this.dataViews.push(data);
+    this.controller.enqueue(new Uint8Array(ab));
     this.numberOfSamples += length;
   }
   setString(view, offset, str) {
@@ -285,9 +284,10 @@ class WavAudioEncoder {
       view.setUint8(offset + i, str.charCodeAt(i));
     }
   }
-  encode() {
+  async encode() {
     const dataSize = this.numberOfChannels * this.numberOfSamples * 2;
-    const view = new DataView(new ArrayBuffer(44));
+    const buffer = new ArrayBuffer(44);
+    const view = new DataView(buffer);
     this.setString(view, 0, 'RIFF');
     view.setUint32(4, 36 + dataSize, true);
     this.setString(view, 8, 'WAVE');
@@ -301,8 +301,10 @@ class WavAudioEncoder {
     view.setUint16(34, 16, true);
     this.setString(view, 36, 'data');
     view.setUint32(40, dataSize, true);
-    this.dataViews.unshift(view);
-    return this.dataViews;
+    this.controller.close();
+    return new Blob([buffer, await new Response(this.readable, {cache:'no-store'}).arrayBuffer()], {
+      type: 'audio/wav'
+    });
   }
 }
 export { WebCodecsOpusRecorder, WebCodecsOpusPlayer, WavAudioEncoder };
