@@ -260,7 +260,7 @@ class WavAudioEncoder {
       for (let i = 0, j = 0, n = 1; i < floats.length; i++) {
         channels[(n = ++n % 2)][!n ? j++ : j - 1] = floats[i];
       }
-      channels = channels.map((f)=>new Float32Array(f));
+      channels = channels.map((f) => new Float32Array(f));
     } else {
       channels = [floats];
     }
