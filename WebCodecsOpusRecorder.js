@@ -99,7 +99,17 @@ class WebCodecsOpusMediaSource {
       'ended',
     ]) {
       this.audio.addEventListener(event, (e) => {
-        console.log(e.type, this.audio.currentTime);       
+        console.log(e.type);
+        if (this.ms.readyState === 'open') {
+          if (this.ms.activeSourceBuffers.length && 
+              !this.ms.activeSourceBuffers[0].updating 
+              && e.type === 'timeupdate' && this.audio.currentTime > 0) {
+            this.ms.activeSourceBuffers[0].timestampOffset = this.audio.currentTime;
+          }
+          if (e.type === 'waiting' && this.audio.currentTime > 0) {
+            this.ms.activeSourceBuffers[0].timestampOffset = 0;
+          }
+        }
       });
     }
     document.body.appendChild(this.audio);
