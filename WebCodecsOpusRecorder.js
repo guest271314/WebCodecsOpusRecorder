@@ -127,7 +127,7 @@ class WebCodecsOpusPlayer {
       'timeupdate',
     ];
     for (const event of events) {
-      this.audio.addEventListener(event, (e) => {
+      this.audio.addEventListener(event, async (e) => {
         if (this.type === 'mediaSource') {
           if (this.ms.readyState === 'open') {
             if (
