@@ -141,6 +141,9 @@ class WebCodecsOpusPlayer {
               this.ms.activeSourceBuffers[0].timestampOffset = 0;
               // this.ms.endOfStream();
             }
+            if (e.type === 'loadedmetadata') {
+              await this.audio.play();
+            }
             if (e.type === 'ended') {
               console.log(e.type);
             }
