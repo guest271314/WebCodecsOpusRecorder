@@ -109,6 +109,9 @@ class WebCodecsOpusMediaSource {
           if (e.type === 'waiting' && this.audio.currentTime > 0) {
             this.ms.activeSourceBuffers[0].timestampOffset = 0;
           }
+          if (e.type === 'loadedmetadata') {
+            await this.audio.play();
+          }
         }
       });
     }
