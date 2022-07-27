@@ -14,6 +14,7 @@ class WebCodecsOpusRecorder {
         codec: 'opus',
       };
     this.isConfigured = false;
+
     Object.assign(this, {
       track,
       processor,
@@ -21,6 +22,9 @@ class WebCodecsOpusRecorder {
       blob,
       config,
     });
+
+    Object.assign(this, { track, processor, metadata, blob, config });
+
   }
   async start() {
     this.processor.readable
@@ -151,6 +155,20 @@ class WebCodecsOpusPlayer {
         } else {
           if (this.type === 'wav' && e.type !== 'timeupdate') {
             console.log(e.type);
+    ]) {
+      this.audio.addEventListener(event, (e) => {
+        console.log(e.type);
+        if (this.ms.readyState === 'open') {
+          if (this.ms.activeSourceBuffers.length && 
+              !this.ms.activeSourceBuffers[0].updating 
+              && e.type === 'timeupdate' && this.audio.currentTime > 0) {
+            this.ms.activeSourceBuffers[0].timestampOffset = this.audio.currentTime;
+          }
+          if (e.type === 'waiting' && this.audio.currentTime > 0) {
+            this.ms.activeSourceBuffers[0].timestampOffset = 0;
+          }
+          if (e.type === 'loadedmetadata') {
+            await this.audio.play();
           }
         }
       });
@@ -228,6 +246,7 @@ class WebCodecsOpusPlayer {
             data: this.data.subarray(this.index, this.index + offset),
           });
           decoder.decode(eac);
+          await sourceBuffer.appendEncodedChunks(eac);
           this.timestamp += eac.duration;
           this.index += offset;
         }
