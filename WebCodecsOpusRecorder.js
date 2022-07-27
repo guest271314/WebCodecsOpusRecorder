@@ -4,15 +4,14 @@ class WebCodecsOpusRecorder {
       track,
     });
     const metadata = {
-      offsets: [],
-    }
-      , // Opus packet offsets
-    blob = new Blob()
-      , config = {
-      numberOfChannels: 1,
-      sampleRate: 48000,
-      codec: 'opus',
-    };
+        offsets: [],
+      }, // Opus packet offsets
+      blob = new Blob(),
+      config = {
+        numberOfChannels: 1,
+        sampleRate: 48000,
+        codec: 'opus',
+      };
     this.isConfigured = false;
     Object.assign(this, {
       track,
@@ -23,30 +22,38 @@ class WebCodecsOpusRecorder {
     });
   }
   async start() {
-    this.processor.readable.pipeTo(new WritableStream({
-      write: async(frame)=>{
-        if (!this.isConfigured) {
-          this.config.numberOfChannels = frame.numberOfChannels;
-          this.config.sampleRate = frame.sampleRate;
-          console.log(await AudioEncoder.isConfigSupported(this.config), frame);
-          this.encoder.configure(this.config);
-          this.isConfigured = true;
-        }
-        this.encoder.encode(frame);
-      }
-      ,
-      close() {
-        console.log('Processor closed');
-      },
-    })).catch(console.warn);
+    this.processor.readable
+      .pipeTo(
+        new WritableStream({
+          write: async (frame) => {
+            if (!this.isConfigured) {
+              this.config.numberOfChannels = frame.numberOfChannels;
+              this.config.sampleRate = frame.sampleRate;
+              console.log(
+                await AudioEncoder.isConfigSupported(this.config),
+                frame
+              );
+              this.encoder.configure(this.config);
+              this.isConfigured = true;
+            }
+            this.encoder.encode(frame);
+          },
+          close() {
+            console.log('Processor closed');
+          },
+        })
+      )
+      .catch(console.warn);
     let firstEncodedChunk = false;
     this.encoder = new AudioEncoder({
       error(e) {
         console.log(e);
       },
-      output: async(chunk,{decoderConfig}={})=>{
+      output: async (chunk, { decoderConfig } = {}) => {
         if (decoderConfig) {
-          decoderConfig.description = btoa(String.fromCharCode(...new Uint8Array(decoderConfig.description)));
+          decoderConfig.description = btoa(
+            String.fromCharCode(...new Uint8Array(decoderConfig.description))
+          );
           Object.assign(this.metadata, {
             decoderConfig,
           });
@@ -56,13 +63,12 @@ class WebCodecsOpusRecorder {
           console.log(chunk, this.config);
           firstEncodedChunk = true;
         }
-        const {byteLength} = chunk;
+        const { byteLength } = chunk;
         this.metadata.offsets.push(byteLength);
         const ab = new ArrayBuffer(byteLength);
         chunk.copyTo(ab);
         this.blob = new Blob([this.blob, ab]);
-      }
-      ,
+      },
     });
 
     this.encoder.configure(this.config);
@@ -73,7 +79,7 @@ class WebCodecsOpusRecorder {
     const json = JSON.stringify(this.metadata);
     const length = Uint32Array.of(json.length);
     // JSON configuration length
-    this.blob = new Blob([length, json, this.blob],{
+    this.blob = new Blob([length, json, this.blob], {
       type: 'application/octet-stream',
     });
     console.log(URL.createObjectURL(this.blob));
@@ -86,33 +92,63 @@ class WebCodecsOpusRecorder {
   }
 }
 class WebCodecsOpusPlayer {
-  constructor(source, {type='mediaSource'}={}) {
+  constructor(source, { type = 'mediaSource' } = {}) {
     this.buffer = source;
     this.type = type;
     const view = new DataView(this.buffer);
     const length = view.getUint32(0, true);
-    const json = new TextDecoder().decode(new Uint8Array(this.buffer).subarray(4, length + 4));
+    const json = new TextDecoder().decode(
+      new Uint8Array(this.buffer).subarray(4, length + 4)
+    );
     this.config = JSON.parse(json);
     console.log(this.config);
     this.data = new Uint8Array(this.buffer).subarray(json.length + 4);
     this.index = 0;
     this.timestamp = 0;
     this.duration = 60000;
-    this.config.decoderConfig.description = new Uint8Array([...atob(this.config.decoderConfig.description)].map((s)=>s.charCodeAt())).buffer;
+    this.config.decoderConfig.description = new Uint8Array(
+      [...atob(this.config.decoderConfig.description)].map((s) =>
+        s.charCodeAt()
+      )
+    ).buffer;
   }
   async play() {
     this.audio = new Audio();
     this.audio.controls = true;
-    const events = ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'play', 'playing', 'pause', 'waiting', 'progress', 'seeking', 'seeked', 'ended', 'stalled', 'timeupdate', ];
+    const events = [
+      'loadedmetadata',
+      'loadeddata',
+      'canplay',
+      'canplaythrough',
+      'play',
+      'playing',
+      'pause',
+      'waiting',
+      'progress',
+      'seeking',
+      'seeked',
+      'ended',
+      'stalled',
+      'timeupdate',
+    ];
     for (const event of events) {
-      this.audio.addEventListener(event, async(e)=>{
+      this.audio.addEventListener(event, async (e) => {
         if (this.type === 'mediaSource') {
           if (this.ms.readyState === 'open') {
-            if (this.ms.activeSourceBuffers.length && !this.ms.activeSourceBuffers[0].updating && e.type === 'timeupdate' && this.audio.currentTime > 0) {
+            if (
+              this.ms.activeSourceBuffers.length &&
+              !this.ms.activeSourceBuffers[0].updating &&
+              e.type === 'timeupdate' &&
+              this.audio.currentTime > 0
+            ) {
               this.ms.activeSourceBuffers[0].timestampOffset = this.audio.currentTime;
             }
             if (e.type === 'waiting' && this.audio.currentTime > 0) {
-              console.log(e.type, this.audio.currentTime, this.ms.activeSourceBuffers[0].timestampOffset);
+              console.log(
+                e.type,
+                this.audio.currentTime,
+                this.ms.activeSourceBuffers[0].timestampOffset
+              );
               this.ms.activeSourceBuffers[0].timestampOffset = 0;
               // this.audio.currentTime = 0;
               // this.ms.endOfStream();
@@ -130,20 +166,19 @@ class WebCodecsOpusPlayer {
             console.log(e.type);
           }
         }
-      }
-      );
+      });
     }
     document.body.appendChild(this.audio);
     if (this.type === 'mediaSource') {
       this.ms = new MediaSource();
-      this.ms.addEventListener('sourceopen', async(e)=>{
+      this.ms.addEventListener('sourceopen', async (e) => {
         console.log(e.type);
         URL.revokeObjectURL(this.audio.src);
         const sourceBuffer = this.ms.addSourceBuffer({
           audioConfig: this.config.decoderConfig,
         });
         console.log(this.ms.activeSourceBuffers);
-        sourceBuffer.onupdate = (e)=>console.log(e.type);
+        sourceBuffer.onupdate = (e) => console.log(e.type);
         sourceBuffer.mode = 'sequence';
         for (const offset of this.config.offsets) {
           const eac = new EncodedAudioChunk({
@@ -162,14 +197,19 @@ class WebCodecsOpusPlayer {
       if (this.type === 'wav') {
         const wav = new WavAudioEncoder({
           numberOfChannels: this.config.decoderConfig.numberOfChannels,
-          sampleRate: this.config.decoderConfig.sampleRate
+          sampleRate: this.config.decoderConfig.sampleRate,
         });
         const decoder = new AudioDecoder({
           error(e) {
             console.error(e);
           },
           async output(frame) {
-            const {duration, numberOfChannels, numberOfFrames, sampleRate, } = frame;
+            const {
+              duration,
+              numberOfChannels,
+              numberOfFrames,
+              sampleRate,
+            } = frame;
             const size = frame.allocationSize({
               planeIndex: 0,
             });
@@ -180,7 +220,9 @@ class WebCodecsOpusPlayer {
             wav.write(chunk);
           },
         });
-        console.log(await AudioDecoder.isConfigSupported(this.config.decoderConfig));
+        console.log(
+          await AudioDecoder.isConfigSupported(this.config.decoderConfig)
+        );
         decoder.configure(this.config.decoderConfig);
         this.index = 0;
         this.timestamp = 0;
@@ -205,12 +247,12 @@ class WebCodecsOpusPlayer {
 }
 // https://github.com/higuma/wav-audio-encoder-js
 class WavAudioEncoder {
-  constructor({sampleRate, numberOfChannels}) {
+  constructor({ sampleRate, numberOfChannels }) {
     let controller;
     let readable = new ReadableStream({
       start(c) {
-        return controller = c;
-      }
+        return (controller = c);
+      },
     });
     Object.assign(this, {
       sampleRate,
@@ -218,7 +260,7 @@ class WavAudioEncoder {
       numberOfSamples: 0,
       dataViews: [],
       controller,
-      readable
+      readable,
     });
   }
   write(buffer) {
@@ -230,18 +272,22 @@ class WavAudioEncoder {
       for (let i = 0, j = 0, n = 1; i < floats.length; i++) {
         channels[(n = ++n % 2)][!n ? j++ : j - 1] = floats[i];
       }
-      channels = channels.map((f)=>new Float32Array(f));
+      channels = channels.map((f) => new Float32Array(f));
     } else {
       channels = [floats];
     }
-    const [{length}] = channels;
+    const [{ length }] = channels;
     const ab = new ArrayBuffer(length * this.numberOfChannels * 2);
     const data = new DataView(ab);
     let offset = 0;
     for (let i = 0; i < length; i++) {
       for (let ch = 0; ch < this.numberOfChannels; ch++) {
         let x = channels[ch][i] * 0x7fff;
-        data.setInt16(offset, x < 0 ? Math.max(x, -0x8000) : Math.min(x, 0x7fff), true);
+        data.setInt16(
+          offset,
+          x < 0 ? Math.max(x, -0x8000) : Math.min(x, 0x7fff),
+          true
+        );
         offset += 2;
       }
     }
@@ -272,11 +318,17 @@ class WavAudioEncoder {
     this.setString(view, 36, 'data');
     view.setUint32(40, dataSize, true);
     this.controller.close();
-    return new Blob([buffer, await new Response(this.readable,{
-      cache: 'no-store'
-    }).arrayBuffer()],{
-      type: 'audio/wav'
-    });
+    return new Blob(
+      [
+        buffer,
+        await new Response(this.readable, {
+          cache: 'no-store',
+        }).arrayBuffer(),
+      ],
+      {
+        type: 'audio/wav',
+      }
+    );
   }
 }
-export {WebCodecsOpusRecorder, WebCodecsOpusPlayer, WavAudioEncoder};
+export { WebCodecsOpusRecorder, WebCodecsOpusPlayer, WavAudioEncoder };
