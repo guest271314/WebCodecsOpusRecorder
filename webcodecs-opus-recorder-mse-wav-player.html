@@ -2,7 +2,7 @@
 
 <html>
   <head>
-    <title>WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk Player</title>
+    <title>WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk, WAV Player</title>
     <style>
       input,
       audio {
@@ -13,19 +13,32 @@
   </head>
 
   <body>
-    <p>WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk Player</p>
+    <p>WebCodecs Opus Recorder and Player</p>
     <button id="record">Record</button><button id="stop">Stop</button><br />
+    <label for="playback-type">Playback type</label>
+    <select id="playback-type">
+      <option selected value="mediaSource">MediaSource</option>
+      <option value="wav">WAV</option>
+    </select>
     <input type="file" accept=".webcodecs" id="file" />
     <script type="module">
       import {
         WebCodecsOpusRecorder,
-        WebCodecsOpusMediaSource,
+        WebCodecsOpusPlayer,
+        WavAudioEncoder,
       } from './WebCodecsOpusRecorder.js';
       
       let webcodecsOpusRecorder, mediaRecorder, stream, track;
       
       document.getElementById('record').onclick = async () => {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSupression: false,
+            autoGainControl: false,
+            channelCount: 2
+          }
+        });
         [track] = stream.getAudioTracks();
         webcodecsOpusRecorder = new WebCodecsOpusRecorder(track);
         webcodecsOpusRecorder.start();      
@@ -41,7 +54,11 @@
         },
       }) => {
         if (file) {
-          new WebCodecsOpusMediaSource(await file.arrayBuffer());
+          const webcodecsOpusPlayer = new WebCodecsOpusPlayer(
+            await file.arrayBuffer(),
+            { type: document.getElementById('playback-type').value }
+          );
+          await webcodecsOpusPlayer.play();
         }
       };
     </script>
