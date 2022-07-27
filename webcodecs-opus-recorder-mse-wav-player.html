@@ -37,9 +37,6 @@
       document.getElementById('record').onclick = async () => {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            deviceId: {
-              exact: device.deviceId,
-            },
             echoCancellation: false,
             noiseSupression: false,
             autoGainControl: false,
