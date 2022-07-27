@@ -25,9 +25,8 @@ class WebCodecsOpusRecorder {
   async start() {
     this.processor.readable.pipeTo(new WritableStream({
       write: async(frame)=>{
-        if (!this.isConfigured && frame.numberOfChannels !== this.config.numberOfChannels) {
+        if (!this.isConfigured) {
           this.config.numberOfChannels = frame.numberOfChannels;
-          this.config.format = frame.format;
           this.config.sampleRate = frame.sampleRate;
           console.log(await AudioEncoder.isConfigSupported(this.config), frame);
           this.encoder.configure(this.config);
