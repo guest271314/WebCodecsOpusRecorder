@@ -1,6 +1,5 @@
 class WebCodecsOpusRecorder {
-  constructor(input) {
-    const track = input.clone();
+  constructor(track) {
     const processor = new MediaStreamTrackProcessor({
       track,
     });
