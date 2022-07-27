@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-
 <html>
   <head>
-    <title>WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk, WAV Player</title>
+    <title>
+      WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk,
+      WAV Player
+    </title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <style>
       input,
       audio {
@@ -11,10 +14,11 @@
       }
     </style>
   </head>
-
   <body>
     <p>WebCodecs Opus Recorder and Player</p>
-    <button id="record">Record</button><button id="stop">Stop</button><br />
+    <button id="record">Record</button>
+    <button id="stop">Stop</button>
+    <br />
     <label for="playback-type">Playback type</label>
     <select id="playback-type">
       <option selected value="mediaSource">MediaSource</option>
@@ -27,23 +31,30 @@
         WebCodecsOpusPlayer,
         WavAudioEncoder,
       } from './WebCodecsOpusRecorder.js';
-      
-      let webcodecsOpusRecorder, mediaRecorder, stream, track;
-      
+
+      let webcodecsOpusRecorder, mediaRecorder, stream, track, audio;
+
       document.getElementById('record').onclick = async () => {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
+            deviceId: {
+              exact: device.deviceId,
+            },
             echoCancellation: false,
             noiseSupression: false,
             autoGainControl: false,
-            channelCount: 2
-          }
+            channelCount: 2,
+          },
         });
         [track] = stream.getAudioTracks();
+        if (stream.getVideoTracks().length) {
+          stream.removeTrack(stream.getVideoTracks()[0]);
+        }
         webcodecsOpusRecorder = new WebCodecsOpusRecorder(track);
-        webcodecsOpusRecorder.start();      
+        webcodecsOpusRecorder.start();
+        console.log(await track.getConstraints(), track.getSettings());
       };
-      
+
       document.getElementById('stop').onclick = () => {
         webcodecsOpusRecorder.stop();
       };
@@ -56,7 +67,9 @@
         if (file) {
           const webcodecsOpusPlayer = new WebCodecsOpusPlayer(
             await file.arrayBuffer(),
-            { type: document.getElementById('playback-type').value }
+            {
+              type: document.getElementById('playback-type').value,
+            }
           );
           await webcodecsOpusPlayer.play();
         }
