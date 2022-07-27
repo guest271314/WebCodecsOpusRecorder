@@ -31,7 +31,14 @@
       let webcodecsOpusRecorder, mediaRecorder, stream, track;
       
       document.getElementById('record').onclick = async () => {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSupression: false,
+            autoGainControl: false,
+            channelCount: 2
+          }
+        });
         [track] = stream.getAudioTracks();
         webcodecsOpusRecorder = new WebCodecsOpusRecorder(track);
         webcodecsOpusRecorder.start();      
