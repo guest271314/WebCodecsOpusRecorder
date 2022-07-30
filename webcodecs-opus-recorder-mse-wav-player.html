@@ -49,7 +49,7 @@
         }
         webcodecsOpusRecorder = new WebCodecsOpusRecorder(track);
         webcodecsOpusRecorder.start();
-        console.log(await track.getConstraints(), track.getSettings());
+        console.log(track.label, await track.getConstraints(), track.getSettings());
       };
 
       document.getElementById('stop').onclick = () => {
