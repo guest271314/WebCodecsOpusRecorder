@@ -4,8 +4,8 @@ class WebCodecsOpusRecorder {
       track,
     });
     const metadata = {
-        offsets: [],
-      }, // Opus packet offsets
+        offsets: [], // Opus packet offsets
+      }, 
       blob = new Blob(),
       config = {
         numberOfChannels: 1,
@@ -77,8 +77,7 @@ class WebCodecsOpusRecorder {
     this.track.stop();
     await this.encoder.flush();
     const json = JSON.stringify(this.metadata);
-    const length = Uint32Array.of(json.length);
-    // JSON configuration length
+    const length = Uint32Array.of(json.length); // JSON configuration length
     this.blob = new Blob([length, json, this.blob], {
       type: 'application/octet-stream',
     });
