@@ -203,12 +203,6 @@ class WebCodecsOpusPlayer {
             console.error(e);
           },
           async output(frame) {
-            const {
-              duration,
-              numberOfChannels,
-              numberOfFrames,
-              sampleRate,
-            } = frame;
             const size = frame.allocationSize({
               planeIndex: 0,
             });
