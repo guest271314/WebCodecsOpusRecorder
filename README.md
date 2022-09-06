@@ -5,3 +5,4 @@ WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk Player
 
 # License
 This is FOSS. If you think a license is necessary consider WTFPLv2 https://en.wikipedia.org/wiki/WTFPL applicable.
+wav-audio-encoder-js license: https://github.com/higuma/wav-audio-encoder-js/blob/master/LICENSE.txt
