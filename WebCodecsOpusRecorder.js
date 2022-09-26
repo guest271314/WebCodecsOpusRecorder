@@ -4,8 +4,9 @@ class WebCodecsOpusRecorder {
       track,
     });
     const metadata = {
-        offsets: [], // Opus packet offsets
-      }, 
+        offsets: [],
+        // Opus packet offsets
+      },
       blob = new Blob(),
       config = {
         numberOfChannels: 1,
@@ -75,9 +76,12 @@ class WebCodecsOpusRecorder {
   }
   async stop() {
     this.track.stop();
+    console.log(this.track);
     await this.encoder.flush();
     const json = JSON.stringify(this.metadata);
-    const length = Uint32Array.of(json.length); // JSON configuration length
+    console.log('stop', this.metadata);
+    const length = Uint32Array.of(json.length);
+    // JSON configuration length
     this.blob = new Blob([length, json, this.blob], {
       type: 'application/octet-stream',
     });
@@ -235,6 +239,17 @@ class WebCodecsOpusPlayer {
         const data = await wav.encode();
         this.audio.src = URL.createObjectURL(data);
       }
+    }
+
+    if (
+      Object.hasOwn(this.config, 'mediaSessionMetadata') &&
+      Object.values(this.config.mediaSessionMetadata).length
+    ) {
+      navigator.mediaSession.metadata = new MediaMetadata(
+        this.config.mediaSessionMetadata
+      );
+    } else {
+      navigator.mediaSession.metadata = null;
     }
   }
 }
