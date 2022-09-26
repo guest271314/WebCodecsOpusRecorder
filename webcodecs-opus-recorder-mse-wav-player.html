@@ -5,12 +5,17 @@
       WebCodecs Opus Recorder/Media Source Extensions Opus EncodedAudioChunk,
       WAV Player
     </title>
-    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <style>
       input,
+      label,
+      select,
       audio {
         position: relative;
         display: block;
+      }
+
+      fieldset {
+        width: 300px;
       }
     </style>
   </head>
@@ -19,12 +24,35 @@
     <button id="record">Record</button>
     <button id="stop">Stop</button>
     <br />
-    <label for="playback-type">Playback type</label>
+    <label for="playback-type">Playback type:</label>
     <select id="playback-type">
       <option selected value="mediaSource">MediaSource</option>
       <option value="wav">WAV</option>
     </select>
-    <input type="file" accept=".webcodecs" id="file" />
+    <label for="media-session-metadata">
+      <code>MediaSession</code>
+      metadata:
+    </label>
+    <input
+      type="checkbox"
+      name="media-session-metadata"
+      id="media-session-metadata"
+    />
+    <fieldset id="meta" disabled>
+      <label for="album">Album:</label>
+      <input type="text" id="album" name="album" />
+      <label for="artist">Artist:</label>
+      <input type="text" id="artist" name="artist" />
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" />
+      <label for="artwork">Artwork:</label>
+      <input type="file" id="artwork" name="artwork" accept="image/*" />
+    </fieldset>
+    <label for="upload">
+      <code>.opus.webcodecs</code>
+      file upload:
+    </label>
+    <input type="file" accept=".opus.webcodecs" id="file" name="upload" />
     <script type="module">
       import {
         WebCodecsOpusRecorder,
@@ -33,7 +61,9 @@
       } from './WebCodecsOpusRecorder.js';
 
       let webcodecsOpusRecorder, mediaRecorder, stream, track, audio;
-
+      document.getElementById('media-session-metadata').onchange = (e) => {
+        document.getElementById('meta').disabled = !e.target.checked;
+      };
       document.getElementById('record').onclick = async () => {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -45,14 +75,54 @@
         });
         [track] = stream.getAudioTracks();
         if (stream.getVideoTracks().length) {
+          stream.getVideoTracks()[0].stop();
           stream.removeTrack(stream.getVideoTracks()[0]);
         }
         webcodecsOpusRecorder = new WebCodecsOpusRecorder(track);
         webcodecsOpusRecorder.start();
-        console.log(track.label, await track.getConstraints(), track.getSettings());
+        console.log(
+          track.label,
+          await track.getConstraints(),
+          track.getSettings()
+        );
       };
 
-      document.getElementById('stop').onclick = () => {
+      document.getElementById('stop').onclick = async () => {
+        if (!document.getElementById('meta').disabled) {
+          const metadata = {};
+          document
+            .querySelectorAll(
+              'input[name=artist], input[name=album], input[name=title]'
+            )
+            .forEach((el) => {
+              metadata[el.name] = el.value;
+            });
+          const ctx = document.createElement('canvas').getContext('2d');
+          const [artworkFile] = document.querySelector('#artwork').files;
+          const setArtwork = async (blob, context) => {
+            return [{
+                src: `data:${blob.type};base64,${btoa(
+                  String.fromCharCode(
+                    ...new Uint8Array(await blob.arrayBuffer())
+                  )
+                )}`,
+                type: blob.type,
+                sizes: `${context.width}x${context.height}`,
+              }]
+          }
+          if (artworkFile) {
+            metadata.artwork = await setArtwork(artworkFile, await createImageBitmap(artworkFile));        
+          } else {
+            ctx.fillStyle = 'goldenrod';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const blob = await new Promise((resolve) =>
+              ctx.canvas.toBlob(resolve)
+            );
+            metadata.artwork = await setArtwork(blob, ctx.canvas);
+          }
+          console.log(metadata, webcodecsOpusRecorder);
+          webcodecsOpusRecorder.metadata.mediaSessionMetadata = metadata;
+        }
         webcodecsOpusRecorder.stop();
       };
 
