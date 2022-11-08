@@ -102,9 +102,8 @@
           const setArtwork = async (blob, context) => {
             return [{
                 src: `data:${blob.type};base64,${btoa(
-                  String.fromCharCode(
-                    ...new Uint8Array(await blob.arrayBuffer())
-                  )
+                  new Uint8Array(await artworkFile.arrayBuffer()).reduce((acc, i) => 
+                    acc += String.fromCharCode.apply(null, [i]), '')
                 )}`,
                 type: blob.type,
                 sizes: `${context.width}x${context.height}`,
