@@ -6,16 +6,21 @@
       WAV Player
     </title>
     <style>
-      input,
+      fieldset {
+        width: 300px;
+      }
+      fieldset input,
       label,
       select,
       audio {
         position: relative;
         display: block;
       }
-
-      fieldset {
-        width: 300px;
+      #file, #clear {
+        display:inline-block;
+      }
+      #file {
+        width: 200px;
       }
     </style>
   </head>
@@ -53,6 +58,7 @@
       file upload:
     </label>
     <input type="file" accept=".opus.webcodecs" id="file" name="upload" />
+    <input type="button" id="clear" value="Clear file selection" />
     <script type="module">
       import {
         WebCodecsOpusRecorder,
@@ -63,6 +69,9 @@
       let webcodecsOpusRecorder, mediaRecorder, stream, track, audio;
       document.getElementById('media-session-metadata').onchange = (e) => {
         document.getElementById('meta').disabled = !e.target.checked;
+      };
+      document.getElementById('clear').onclick = (e) => {
+        document.getElementById('file').value = '';
       };
       document.getElementById('record').onclick = async () => {
         stream = await navigator.mediaDevices.getUserMedia({
